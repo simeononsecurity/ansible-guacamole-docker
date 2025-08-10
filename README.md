@@ -16,7 +16,7 @@ A complete Docker Compose setup for deploying Apache Guacamole with PostgreSQL d
 
 1. **Clone and configure**:
    ```bash
-   git clone https://github.com/your-username/guacamole-docker-deployment.git
+   git clone https://github.com/simeononsecurity/ansible-guacamole-docker.git
    cd guacamole-docker-deployment
    cp .env.example .env
    ```
