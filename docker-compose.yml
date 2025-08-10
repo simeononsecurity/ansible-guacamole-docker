@@ -1,0 +1,77 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: guacamole-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: guacamole_db
+      POSTGRES_USER: guacamole_user
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-guacamole_password}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init:/docker-entrypoint-initdb.d:ro
+    networks:
+      - guacamole-net
+    ports:
+      - "5432:5432"
+
+  guacd:
+    image: guacamole/guacd:latest
+    container_name: guacamole-guacd
+    restart: unless-stopped
+    networks:
+      - guacamole-net
+    environment:
+      - LOG_LEVEL=info
+    volumes:
+      - guacd_data:/var/lib/guacamole
+
+  guacamole:
+    image: guacamole/guacamole:latest
+    container_name: guacamole-web
+    restart: unless-stopped
+    ports:
+      - "${GUACAMOLE_PORT:-8080}:8080"
+    networks:
+      - guacamole-net
+    environment:
+      # PostgreSQL Database Configuration
+      - POSTGRESQL_ENABLED=true
+      - POSTGRESQL_DATABASE=guacamole_db
+      - POSTGRESQL_USERNAME=guacamole_user
+      - POSTGRESQL_PASSWORD=${POSTGRES_PASSWORD:-guacamole_password}
+      - POSTGRESQL_HOSTNAME=postgres
+      - POSTGRESQL_PORT=5432
+      
+      # Guacd Connection Configuration
+      - GUACD_HOSTNAME=guacd
+      - GUACD_PORT=4822
+      
+      # Security Settings
+      - BAN_ENABLED=true
+      - BAN_MAX_INVALID_ATTEMPTS=5
+      - BAN_ADDRESS_DURATION=300
+      
+      # Optional: Additional security settings
+      - POSTGRESQL_DEFAULT_STATEMENT_TIMEOUT=0
+      - POSTGRESQL_SOCKET_TIMEOUT=0
+      - POSTGRESQL_AUTO_CREATE_ACCOUNTS=false
+    depends_on:
+      - postgres
+      - guacd
+    volumes:
+      - guacamole_data:/etc/guacamole
+
+volumes:
+  postgres_data:
+    driver: local
+  guacd_data:
+    driver: local
+  guacamole_data:
+    driver: local
+
+networks:
+  guacamole-net:
+    driver: bridge
